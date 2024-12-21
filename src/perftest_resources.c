@@ -14,6 +14,7 @@
 #include <sys/mman.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <math.h>
 #include <pthread.h>
 #if defined(__FreeBSD__)
 #include <sys/stat.h>
@@ -28,6 +29,7 @@
 
 #include "perftest_resources.h"
 #include "raw_ethernet_resources.h"
+#include <float.h>
 
 static enum ibv_wr_opcode opcode_verbs_array[] = {IBV_WR_SEND,IBV_WR_RDMA_WRITE,IBV_WR_RDMA_WRITE_WITH_IMM,IBV_WR_RDMA_READ};
 static enum ibv_wr_opcode opcode_atomic_array[] = {IBV_WR_ATOMIC_CMP_AND_SWP,IBV_WR_ATOMIC_FETCH_AND_ADD};
@@ -3478,8 +3480,36 @@ cleaning:
 	return return_value;
 }
 
+void init_fct_measurement(struct perftest_parameters *user_param, struct pingpong_context *ctx) {  
+    user_param->fct_stats.min = DBL_MAX;  
+    user_param->fct_stats.max = 0;  
+    user_param->fct_stats.mean = 0;  
+    user_param->fct_stats.m2 = 0;  
+    user_param->fct_stats.count = 0;  
+    
+    // 初始化滑动窗口  
+    user_param->fct_stats.window_size = 10000;  // 可配置  
+    user_param->fct_stats.window_index = 0;  
+    user_param->fct_stats.window_filled = 0;  
+    ALLOCATE(user_param->fct_stats.window_buffer, double, user_param->fct_stats.window_size);  
+    
+    // 为每个QP分配时间戳数组  
+    ALLOCATE(ctx->send_timestamps, cycles_t*, user_param->num_of_qps);  
+    for (int i = 0; i < user_param->num_of_qps; i++) {  
+        ALLOCATE(ctx->send_timestamps[i], cycles_t, user_param->tx_depth);  
+    }  
+}
+
+static inline double min_double(double a, double b) {  
+    return (a < b) ? a : b;  
+}  
+
+static inline double max_double(double a, double b) {  
+    return (a > b) ? a : b;  
+}
+
 /******************************************************************************
- *
+ * 被client调用的函数
  ******************************************************************************/
 int run_iter_bw(struct pingpong_context *ctx,struct perftest_parameters *user_param)
 {
@@ -3569,6 +3599,8 @@ int run_iter_bw(struct pingpong_context *ctx,struct perftest_parameters *user_pa
 		gap_cycles = cpu_mhz * gap_time;
 	}
 
+	init_fct_measurement(user_param, ctx);
+	double cycles_to_usec = 1.0 / (get_cpu_mhz(user_param->cpu_freq_f));
 	/* main loop for posting */
 	while (totscnt < tot_iters  || totccnt < tot_iters ||
 		(user_param->test_type == DURATION && user_param->state != END_STATE) ) {
@@ -3604,6 +3636,8 @@ int run_iter_bw(struct pingpong_context *ctx,struct perftest_parameters *user_pa
 
 				if (user_param->test_type == DURATION && user_param->state == END_STATE)
 					break;
+
+				ctx->send_timestamps[index][ctx->scnt[index] % user_param->tx_depth] = get_cycles();
 
 				err = post_send_method(ctx, index, user_param);
 				if (err) {
@@ -3668,8 +3702,32 @@ int run_iter_bw(struct pingpong_context *ctx,struct perftest_parameters *user_pa
 				}
 				ne = ibv_poll_cq(ctx->send_cq, CTX_POLL_BATCH, wc);
 				if (ne > 0) {
+					cycles_t current_time = get_cycles();
 					for (i = 0; i < ne; i++) {
 						wc_id = (int)wc[i].wr_id;
+						// 计算FCT  
+						int tx_index = ctx->ccnt[wc_id] % user_param->tx_depth;  
+						cycles_t start_time = ctx->send_timestamps[wc_id][tx_index];  
+						double fct = (current_time - start_time) * cycles_to_usec;  
+						
+						// 更新FCT统计  
+						struct fct_stats *stats = &user_param->fct_stats;  
+						stats->min = min_double(stats->min, fct);  
+						stats->max = max_double(stats->max, fct);  
+
+						// Welford's online algorithm  
+						stats->count++;  
+						double delta = fct - stats->mean;  
+						stats->mean += delta / stats->count;  
+						double delta2 = fct - stats->mean;  
+						stats->m2 += delta * delta2;  
+						
+						// 更新滑动窗口  
+						stats->window_buffer[stats->window_index] = fct;  
+						stats->window_index = (stats->window_index + 1) % stats->window_size;  
+						if (stats->window_index == 0) {  
+							stats->window_filled = 1;  
+						}  
 
 						if (wc[i].status != IBV_WC_SUCCESS) {
 							NOTIFY_COMP_ERROR_SEND(wc[i],totscnt,totccnt);
@@ -3714,6 +3772,14 @@ cleaning:
 	return return_value;
 }
 
+// 修改清理函数  
+void cleanup_fct_measurement(struct perftest_parameters *user_param, struct pingpong_context *ctx) {  
+    free(user_param->fct_stats.window_buffer);  
+    for (int i = 0; i < user_param->num_of_qps; i++) {  
+        free(ctx->send_timestamps[i]);  
+    }  
+    free(ctx->send_timestamps);
+} 
 /******************************************************************************
  *
  ******************************************************************************/

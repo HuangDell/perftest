@@ -446,6 +446,19 @@ enum memory_type {
 	MEMORY_MLU
 };
 
+struct fct_stats {  
+    double min;            
+    double max;            
+    double mean;           
+    double m2;            
+    uint64_t count;       
+    // 使用固定大小的循环缓冲区  
+    double *window_buffer;  
+    int window_size;      
+    int window_index;     
+    int window_filled;    
+}; 
+
 struct perftest_parameters {
 
 	int				port;
@@ -644,6 +657,7 @@ struct perftest_parameters {
 	int				use_ddp;
 	int				no_ddp;
 	int				connectionless;
+	struct fct_stats fct_stats;
 };
 
 struct report_options {

@@ -232,6 +232,7 @@ struct pingpong_context {
 	int 					fd;
 	#endif
 	struct memory_ctx			*memory;
+	cycles_t **send_timestamps; // 每个QP的发送时间戳数组  
 };
 
  struct pingpong_dest {

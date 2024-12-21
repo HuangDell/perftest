@@ -2471,7 +2471,7 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 			{ .name = "remote_port",	.has_arg = 1, .flag = &remote_port_flag, .val = 1 },
 			{ .name = "local_port",		.has_arg = 1, .flag = &local_port_flag, .val = 1 },
 			{ .name = "run_infinitely",	.has_arg = 0, .flag = &run_inf_flag, .val = 1 },
-			{ .name = "report_gbits",	.has_arg = 0, .flag = &report_fmt_flag, .val = 1},
+			{ .name = "report_gbits",	.has_arg = 0, .flag = &report_fmt_flag, .val = 0},
 			{ .name = "use-srq",		.has_arg = 0, .flag = &srq_flag, .val = 1},
 			#ifdef HAVE_TD_API
 			{ .name = "no_lock",		.has_arg = 0, .flag = &no_lock_flag, .val = 1},
