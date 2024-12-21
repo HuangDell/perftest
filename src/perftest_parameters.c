@@ -3712,6 +3712,16 @@ static float calc_cpu_util (struct perftest_parameters *user_param)
 		return 0;
 }
 
+// 用于qsort的比较函数  
+static int compare_doubles(const void *a, const void *b) {  
+    const double *da = (const double *)a;  
+    const double *db = (const double *)b;  
+    
+    if (*da > *db) return 1;  
+    if (*da < *db) return -1;  
+    return 0;  
+}
+
 /******************************************************************************
  *
  ******************************************************************************/
@@ -3808,6 +3818,31 @@ void print_report_bw (struct perftest_parameters *user_param, struct bw_report_d
 	my_bw_rep->bw_avg_p2 = bw_avg_p2;
 	my_bw_rep->msgRate_avg_p2 = msgRate_avg_p2;
 	my_bw_rep->sl = user_param->sl;
+	printf("\nFCT Statistics:\n");  
+    printf("--------------\n");  
+    printf("Average FCT:    %.2f usec\n", user_param->fct_stats.mean);  
+    printf("Minimum FCT:    %.2f usec\n", user_param->fct_stats.min);  
+    printf("Maximum FCT:    %.2f usec\n", user_param->fct_stats.max);  
+    
+    // 计算标准差  
+    double std_dev = sqrt(user_param->fct_stats.m2 / (user_param->fct_stats.count - 1));  
+    printf("Std Dev FCT:    %.2f usec\n", std_dev);  
+    printf("Sample Count:   %lu\n", user_param->fct_stats.count);  
+    
+    // 计算99分位数  
+    if (user_param->fct_stats.count > 0) {  
+        int window_size = user_param->fct_stats.window_filled ?   
+                         user_param->fct_stats.window_size :   
+                         user_param->fct_stats.window_index;  
+        
+        if (window_size > 0) {  
+            double *temp = malloc(window_size * sizeof(double));  
+            memcpy(temp, user_param->fct_stats.window_buffer, window_size * sizeof(double));  
+            qsort(temp, window_size, sizeof(double), compare_doubles);  
+            printf("99th FCT:       %.2f usec\n", temp[(int)(window_size * 0.99)]);  
+            free(temp);  
+        }  
+    } 
 
 	if (!user_param->duplex || ((user_param->verb == SEND || user_param->verb == WRITE_IMM) && user_param->test_type == DURATION)
 			|| user_param->test_method == RUN_INFINITELY || user_param->connection_type == RawEth)
