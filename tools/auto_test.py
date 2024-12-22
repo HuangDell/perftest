@@ -13,13 +13,14 @@ restart_count = 0
 # 文件名参数
 ft_value = 0  # 可以根据需要修改
 thre_value = 0  # 可以根据需要修改
-version = "v3"  # 可以根据需要修改
+version = "v4"  # 可以根据需要修改  v4 for fct test
+
 
 
 RESOURCES_DIR = "./out/prototype/" +version 
 FILENAME = f"prototype_ft_{ft_value}_thre_{thre_value}_{version}.log"
 LOG_FILE = os.path.join(RESOURCES_DIR, FILENAME)  
-MODE = "./ib_send_lat"
+MODE = "./ib_send_bw"
 wait_time = None
 
 # 获取主机名
