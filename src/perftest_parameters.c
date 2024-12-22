@@ -2304,6 +2304,7 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 	int size_factor = 1;
 	static int run_inf_flag = 0;
 	static int report_fmt_flag = 0;
+	static int use_dscp_flag= 0; 	// use dscp or not
 	static int srq_flag = 0;
 	static int use_null_mr_flag = 0;
 	static int report_both_flag = 0;
@@ -2471,8 +2472,9 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 			{ .name = "remote_port",	.has_arg = 1, .flag = &remote_port_flag, .val = 1 },
 			{ .name = "local_port",		.has_arg = 1, .flag = &local_port_flag, .val = 1 },
 			{ .name = "run_infinitely",	.has_arg = 0, .flag = &run_inf_flag, .val = 1 },
-			{ .name = "report_gbits",	.has_arg = 0, .flag = &report_fmt_flag, .val = 0},
+			{ .name = "report_gbits",	.has_arg = 0, .flag = &report_fmt_flag, .val = 1},
 			{ .name = "use-srq",		.has_arg = 0, .flag = &srq_flag, .val = 1},
+			{ .name = "use-dscp",  .has_arg = 0,.flag = &use_dscp_flag,.val = 1 },  
 			#ifdef HAVE_TD_API
 			{ .name = "no_lock",		.has_arg = 0, .flag = &no_lock_flag, .val = 1},
 			#endif
@@ -2861,6 +2863,17 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 					congest_type_flag = 0;
 				}
 				#endif
+				if (use_dscp_flag) {
+					user_param->dscp_values[0] = 4;      
+					user_param->dscp_values[1] = 8;   // CS1  
+					user_param->dscp_values[2] = 16;  // CS2  
+					user_param->dscp_values[3] = 24;  // CS3  
+					user_param->dscp_values[4] = 32;  // CS4  
+					user_param->dscp_values[5] = 40;  // CS5  
+					user_param->dscp_values[6] = 48;  // CS6  
+					user_param->dscp_values[7] = 56;  // CS7 
+					user_param->use_dscp_array = 1;
+				}
 				if (pkey_flag) {
 					CHECK_VALUE(user_param->pkey_index,int,"Pkey index",not_int_ptr);
 					pkey_flag = 0;

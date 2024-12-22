@@ -657,6 +657,9 @@ struct perftest_parameters {
 	int				use_ddp;
 	int				no_ddp;
 	int				connectionless;
+
+	int use_dscp_array;
+	uint8_t dscp_values[8];		// for dscp value array
 	struct fct_stats fct_stats;
 };
 
