@@ -8,13 +8,17 @@ from datetime import datetime
 MAX_RESTARTS = 30
 REPEAT_COUNT = 10000  # -n 参数的值
 PACKET_SIZE = 65536
+
+QP_COUNT = 2
 restart_count = 0
 
 # 文件名参数
 ft_value = 0  # 可以根据需要修改
 thre_value = 0  # 可以根据需要修改
-version = "v4"  # 可以根据需要修改  v4 for fct test
+# 可以根据需要修改  v4 for fct test
+# v5 for qp = 2
 
+version = "v5"  
 
 
 RESOURCES_DIR = "./out/prototype/" +version 
@@ -41,7 +45,7 @@ print(f"Log file: {LOG_FILE}")
 while restart_count < MAX_RESTARTS:
     # 根据主机名构建不同的命令
     if hostname == "FNIL-2022DEC-GPU-7":
-        cmd = ["sudo", MODE, "-d", "mlx5_1", "-n", str(REPEAT_COUNT),"-s", str(PACKET_SIZE)]
+        cmd = ["sudo", MODE, "-d", "mlx5_1", "-n", str(REPEAT_COUNT),"-s", str(PACKET_SIZE),"-q",str(QP_COUNT)]
         wait_time = 1
 
     elif hostname == "FNIL-2022DEC-GPU-8":
