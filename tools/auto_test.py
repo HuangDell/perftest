@@ -13,8 +13,8 @@ QP_COUNT = 2
 restart_count = 0
 
 # 文件名参数
-ft_value = 0  # 可以根据需要修改
-thre_value = 0  # 可以根据需要修改
+ft_value = 7500  # 可以根据需要修改
+thre_value = 6000  # 可以根据需要修改
 # 可以根据需要修改  v4 for fct test
 # v5 for qp = 2
 
@@ -49,7 +49,7 @@ while restart_count < MAX_RESTARTS:
         wait_time = 1
 
     elif hostname == "FNIL-2022DEC-GPU-8":
-        cmd = ["sudo", MODE, "10.10.10.4", "-n", str(REPEAT_COUNT),"-s", str(PACKET_SIZE)]
+        cmd = ["sudo", MODE, "10.10.10.4", "-n", str(REPEAT_COUNT),"-s", str(PACKET_SIZE),"-q",str(QP_COUNT)]
         wait_time = 3
     else:
         message = f"Unsupported hostname: {hostname}"
