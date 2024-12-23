@@ -9,7 +9,7 @@ MAX_RESTARTS = 30
 REPEAT_COUNT = 10000  # -n 参数的值
 PACKET_SIZE = 65536
 
-QP_COUNT = 2
+QP_COUNT = 3
 restart_count = 0
 
 # 文件名参数
@@ -17,8 +17,9 @@ ft_value = 7500  # 可以根据需要修改
 thre_value = 6000  # 可以根据需要修改
 # 可以根据需要修改  v4 for fct test
 # v5 for qp = 2
+# v6 for qp = 3
 
-version = "v5"  
+version = "v6"  
 
 
 RESOURCES_DIR = "./out/prototype/" +version 
