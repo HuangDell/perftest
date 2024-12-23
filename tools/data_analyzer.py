@@ -29,6 +29,13 @@ class BaseAnalyzer(ABC):
             self.version='QP = 2'
         elif (self.version == 'v6'):
             self.version='QP = 3'
+        elif (self.version == 'v7'):
+            self.version='QP = 4'
+        elif (self.version == 'v8'):
+            self.version='QP = 6'
+        elif (self.version == 'v9'):
+            self.version='QP = 8'
+
         pass
 
 
@@ -198,13 +205,65 @@ class BandwidthAnalyzer(BaseAnalyzer):
             labels=['Average Bandwidth']
         )
 
-if __name__ == "__main__":
-    ft_value = 7500
-    thre_value = 6000
-    version = "v5"
+class AnalysisManager:  
+    def __init__(self, base_dir: str = "./out/prototype"):  
+        self.base_dir = base_dir  
+        self.log_pattern = re.compile(r"prototype_ft_(\d+)_thre_(\d+)_(v\d+)\.log$")  
     
-    fct = FCTAnalyzer(ft_value, thre_value, version)
-    fct.process_data()
+    def scan_logs(self) -> List[Tuple[int, int, str]]:  
+        """扫描目录下的所有日志文件并提取参数"""  
+        log_params = []  
+        for root, _, files in os.walk(self.base_dir):  
+            for file in files:  
+                if file.endswith('.log'):  
+                    match = self.log_pattern.match(file)  
+                    if match:  
+                        ft_value = int(match.group(1))  
+                        thre_value = int(match.group(2))  
+                        version = match.group(3)  
+                        log_params.append((ft_value, thre_value, version))  
+        return log_params  
 
-    band = BandwidthAnalyzer(ft_value, thre_value, version)
-    band.process_data()
+    def analyze_all(self):  
+        """分析所有找到的日志文件"""  
+        log_params = self.scan_logs()  
+        if not log_params:  
+            print("No log files found matching the expected pattern.")  
+            return  
+
+        print(f"Found {len(log_params)} log files to analyze.")  
+        for ft_value, thre_value, version in log_params:  
+            print(f"\nAnalyzing: ft={ft_value}, threshold={thre_value}, version={version}")  
+            
+            try:  
+                # 分析 FCT  
+                fct = FCTAnalyzer(ft_value, thre_value, version)  
+                fct.process_data()  
+                
+                # 分析带宽  
+                band = BandwidthAnalyzer(ft_value, thre_value, version)  
+                band.process_data()  
+                
+            except Exception as e:  
+                print(f"Error analyzing file with parameters: "  
+                      f"ft={ft_value}, threshold={thre_value}, version={version}")  
+                print(f"Error details: {str(e)}")  
+
+def main():  
+    # 创建分析管理器并运行分析  
+    manager = AnalysisManager()  
+    manager.analyze_all()  
+
+if __name__ == "__main__":  
+    main()  
+
+# if __name__ == "__main__":
+#     ft_value = 7500
+#     thre_value = 6000
+#     version = "v5"
+    
+#     fct = FCTAnalyzer(ft_value, thre_value, version)
+#     fct.process_data()
+
+#     band = BandwidthAnalyzer(ft_value, thre_value, version)
+#     band.process_data()
