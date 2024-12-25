@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from typing import Dict, Tuple, List
+from collections import defaultdict 
 from abc import ABC, abstractmethod
 
 class BaseAnalyzer(ABC):
@@ -205,6 +206,120 @@ class BandwidthAnalyzer(BaseAnalyzer):
             labels=['Average Bandwidth']
         )
 
+class GroupedAnalyzer:  
+    def __init__(self, base_dir: str = "./out/prototype"):  
+        self.base_dir = base_dir  
+        self.log_pattern = re.compile(r"prototype_ft_(\d+)_thre_(\d+)_(v\d+)\.log$")  
+        
+    def _get_version_display(self, version: str) -> str:  
+        version_map = {  
+            'v4': 'QP = 1',
+            'v5': 'QP = 2',  
+            'v6': 'QP = 3',  
+            'v7': 'QP = 4',  
+            'v8': 'QP = 6',  
+            'v9': 'QP = 8'  
+        }  
+        return version_map.get(version, version)  
+
+    def extract_data_for_version(self) -> Dict:  
+        """Extract and group data by version"""  
+        version_data = defaultdict(lambda: defaultdict(list))  
+        
+        for root, _, files in os.walk(self.base_dir):  
+            for file in files:  
+                if file.endswith('.log'):  
+                    match = self.log_pattern.match(file)  
+                    if match:  
+                        ft_value = int(match.group(1))  
+                        thre_value = int(match.group(2))  
+                        version = match.group(3)  
+                        log_path = os.path.join(root, file)  
+                        
+                        # Extract FCT data  
+                        fct_analyzer = FCTAnalyzer(ft_value, thre_value, version)  
+                        avg_fct, _ = fct_analyzer.extract_data()  
+                        
+                        # Extract bandwidth data  
+                        bw_analyzer = BandwidthAnalyzer(ft_value, thre_value, version)  
+                        avg_bw = bw_analyzer.extract_data()  
+                        
+                        # Store data with parameters  
+                        params = f"{ft_value}/{thre_value}"  
+                        version_data[version][params] = {  
+                            'ft_value': ft_value,  
+                            'thre_value': thre_value,  
+                            'avg_fct': np.mean(avg_fct),  
+                            'avg_bw': np.mean(avg_bw)  
+                        }  
+        
+        return version_data  
+
+    def create_grouped_plots(self):  
+        """Create grouped bar plots for each version"""  
+        version_data = self.extract_data_for_version()  
+        
+        for version, data in version_data.items():  
+            if not data:  
+                continue  
+                
+            # Prepare data for plotting  
+            params = []  
+            avg_fcts = []  
+            avg_bws = []  
+            
+            # Sort by ft_value and thre_value  
+            sorted_params = sorted(data.items(),   
+                                 key=lambda x: (x[1]['ft_value'], x[1]['thre_value']))  
+            
+            for param, values in sorted_params:  
+                params.append(f"{values['ft_value']}\n{values['thre_value']}")  
+                avg_fcts.append(values['avg_fct'])  
+                avg_bws.append(values['avg_bw'])  
+            
+            # Create figure with two subplots  
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))  
+            
+            # Plot Average FCT  
+            bars1 = ax1.bar(params, avg_fcts, color='skyblue')  
+            ax1.set_title(f'Average FCT ({self._get_version_display(version)})',   
+                         fontsize=14, pad=20)  
+            ax1.set_xlabel('Flowlet Timeout / Threshold', fontsize=12)  
+            ax1.set_ylabel('Average FCT (usec)', fontsize=12)  
+            ax1.grid(True, linestyle='--', alpha=0.7)  
+            
+            # Add value labels on bars  
+            for bar in bars1:  
+                height = bar.get_height()  
+                ax1.text(bar.get_x() + bar.get_width()/2., height,  
+                        f'{height:.2f}',  
+                        ha='center', va='bottom', rotation=0)  
+            
+            # Plot Average Bandwidth  
+            bars2 = ax2.bar(params, avg_bws, color='lightgreen')  
+            ax2.set_title(f'Average Bandwidth ({self._get_version_display(version)})',   
+                         fontsize=14, pad=20)  
+            ax2.set_xlabel('Flowlet Timeout / Threshold', fontsize=12)  
+            ax2.set_ylabel('Bandwidth (MB/sec)', fontsize=12)  
+            ax2.grid(True, linestyle='--', alpha=0.7)  
+            
+            # Add value labels on bars  
+            for bar in bars2:  
+                height = bar.get_height()  
+                ax2.text(bar.get_x() + bar.get_width()/2., height,  
+                        f'{height:.2f}',  
+                        ha='center', va='bottom', rotation=0)  
+            
+            # Adjust layout and save  
+            plt.tight_layout()  
+            output_dir = os.path.join(self.base_dir, version, "grouped_analysis")  
+            os.makedirs(output_dir, exist_ok=True)  
+            plt.savefig(os.path.join(output_dir, f'grouped_analysis_{version}.png'),   
+                       dpi=300, bbox_inches='tight')  
+            plt.close()  
+            
+            print(f"Created grouped analysis plot for {self._get_version_display(version)}") 
+
 class AnalysisManager:  
     def __init__(self, base_dir: str = "./out/prototype"):  
         self.base_dir = base_dir  
@@ -248,11 +363,20 @@ class AnalysisManager:
                 print(f"Error analyzing file with parameters: "  
                       f"ft={ft_value}, threshold={thre_value}, version={version}")  
                 print(f"Error details: {str(e)}")  
+    
+    # 以version为组进行分析绘制
+    def analyze_group(self):
+        print("\nGenerating grouped analysis plots...")  
+        grouped_analyzer = GroupedAnalyzer(self.base_dir)  
+        grouped_analyzer.create_grouped_plots()  
+        
+
 
 def main():  
     # 创建分析管理器并运行分析  
     manager = AnalysisManager()  
-    manager.analyze_all()  
+    # manager.analyze_all()  
+    manager.analyze_group()
 
 if __name__ == "__main__":  
     main()  
