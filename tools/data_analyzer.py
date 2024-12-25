@@ -36,6 +36,8 @@ class BaseAnalyzer(ABC):
             self.version='QP = 6'
         elif (self.version == 'v9'):
             self.version='QP = 8'
+        elif (self.version == 'v4'):
+            self.version='QP = 1'
 
         pass
 
@@ -238,7 +240,7 @@ class GroupedAnalyzer:
                         
                         # Extract FCT data  
                         fct_analyzer = FCTAnalyzer(ft_value, thre_value, version)  
-                        avg_fct, _ = fct_analyzer.extract_data()  
+                        avg_fct, fct_99 = fct_analyzer.extract_data()  
                         
                         # Extract bandwidth data  
                         bw_analyzer = BandwidthAnalyzer(ft_value, thre_value, version)  
@@ -250,7 +252,8 @@ class GroupedAnalyzer:
                             'ft_value': ft_value,  
                             'thre_value': thre_value,  
                             'avg_fct': np.mean(avg_fct),  
-                            'avg_bw': np.mean(avg_bw)  
+                            'avg_bw': np.mean(avg_bw),  
+                            'fct_99': np.mean(fct_99)
                         }  
         
         return version_data  
@@ -267,25 +270,30 @@ class GroupedAnalyzer:
             params = []  
             avg_fcts = []  
             avg_bws = []  
+            fct_99s = []
             
             # Sort by ft_value and thre_value  
             sorted_params = sorted(data.items(),   
                                  key=lambda x: (x[1]['ft_value'], x[1]['thre_value']))  
             
             for param, values in sorted_params:  
-                params.append(f"{values['ft_value']}\n{values['thre_value']}")  
+                if(values['ft_value']==0):
+                    params.append('ECMP')
+                else:
+                    params.append(f"{values['ft_value']}\n{values['thre_value']}")  
                 avg_fcts.append(values['avg_fct'])  
+                fct_99s.append(values['fct_99'])
                 avg_bws.append(values['avg_bw'])  
             
-            # Create figure with two subplots  
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))  
+ # Create figure with three subplots  
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 15))  
             
-            # Plot Average FCT  
-            bars1 = ax1.bar(params, avg_fcts, color='skyblue')  
-            ax1.set_title(f'Average FCT ({self._get_version_display(version)})',   
+            # Plot Average Bandwidth (Top)  
+            bars1 = ax1.bar(params, avg_bws, color='lightgreen')  
+            ax1.set_title(f'Average Bandwidth ({self._get_version_display(version)})',   
                          fontsize=14, pad=20)  
             ax1.set_xlabel('Flowlet Timeout / Threshold', fontsize=12)  
-            ax1.set_ylabel('Average FCT (usec)', fontsize=12)  
+            ax1.set_ylabel('Bandwidth (MB/sec)', fontsize=12)  
             ax1.grid(True, linestyle='--', alpha=0.7)  
             
             # Add value labels on bars  
@@ -294,19 +302,34 @@ class GroupedAnalyzer:
                 ax1.text(bar.get_x() + bar.get_width()/2., height,  
                         f'{height:.2f}',  
                         ha='center', va='bottom', rotation=0)  
-            
-            # Plot Average Bandwidth  
-            bars2 = ax2.bar(params, avg_bws, color='lightgreen')  
-            ax2.set_title(f'Average Bandwidth ({self._get_version_display(version)})',   
+
+            # Plot Average FCT (Middle)  
+            bars2 = ax2.bar(params, avg_fcts, color='skyblue')  
+            ax2.set_title(f'Average FCT ({self._get_version_display(version)})',   
                          fontsize=14, pad=20)  
             ax2.set_xlabel('Flowlet Timeout / Threshold', fontsize=12)  
-            ax2.set_ylabel('Bandwidth (MB/sec)', fontsize=12)  
+            ax2.set_ylabel('Average FCT (usec)', fontsize=12)  
             ax2.grid(True, linestyle='--', alpha=0.7)  
             
             # Add value labels on bars  
             for bar in bars2:  
                 height = bar.get_height()  
                 ax2.text(bar.get_x() + bar.get_width()/2., height,  
+                        f'{height:.2f}',  
+                        ha='center', va='bottom', rotation=0)  
+            
+            # Plot 99th Percentile FCT (Bottom)  
+            bars3 = ax3.bar(params, fct_99s, color='salmon')  
+            ax3.set_title(f'99th Percentile FCT ({self._get_version_display(version)})',   
+                         fontsize=14, pad=20)  
+            ax3.set_xlabel('Flowlet Timeout / Threshold', fontsize=12)  
+            ax3.set_ylabel('99th Percentile FCT (usec)', fontsize=12)  
+            ax3.grid(True, linestyle='--', alpha=0.7)  
+            
+            # Add value labels on bars  
+            for bar in bars3:  
+                height = bar.get_height()  
+                ax3.text(bar.get_x() + bar.get_width()/2., height,  
                         f'{height:.2f}',  
                         ha='center', va='bottom', rotation=0)  
             
@@ -318,7 +341,7 @@ class GroupedAnalyzer:
                        dpi=300, bbox_inches='tight')  
             plt.close()  
             
-            print(f"Created grouped analysis plot for {self._get_version_display(version)}") 
+            print(f"Created grouped analysis plot for {self._get_version_display(version)}")  
 
 class AnalysisManager:  
     def __init__(self, base_dir: str = "./out/prototype"):  
