@@ -739,6 +739,27 @@ int run_iter_lat_burst_server(struct pingpong_context *ctx, struct perftest_para
  */
 uint16_t ctx_get_local_lid(struct ibv_context *context, int ib_port);
 
+static __inline uint64_t get_size_from_cdf(struct perftest_parameters *user_param) {  
+    double random_val = (double)rand() / RAND_MAX;  // 生成 0-1 之间的随机数  
+    
+    for (int i = 0; i < user_param->cdf_array_size; i++) {  
+        if (random_val <= user_param->cdf_probabilities[i]) {  
+            // 如果是第一个区间  
+            if (i == 0) {  
+                return user_param->cdf_sizes[i];  
+            }  
+            // 在区间内进行线性插值  
+            double prob_diff = user_param->cdf_probabilities[i] - user_param->cdf_probabilities[i-1];  
+            double size_diff = user_param->cdf_sizes[i] - user_param->cdf_sizes[i-1];  
+            double ratio = (random_val - user_param->cdf_probabilities[i-1]) / prob_diff;  
+            return user_param->cdf_sizes[i-1] + (uint64_t)(ratio * size_diff);  
+        }  
+    }  
+    
+    // 如果没有匹配到(不应该发生),返回最大值  
+    return user_param->cdf_sizes[user_param->cdf_array_size - 1];  
+}
+
 /* ctx_notify_events
  *
  * Description : Prepare the test to work with events instead of polling the CQ.

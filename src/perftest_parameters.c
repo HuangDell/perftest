@@ -2039,6 +2039,56 @@ enum ctx_device ib_dev_name(struct ibv_context *context)
 	return dev_fname;
 }
 
+int load_cdf_file(struct perftest_parameters *user_param)
+{
+    FILE *fp;  
+    char line[256];  
+    int count = 0;  
+    
+    // 首先统计行数  
+    fp = fopen(user_param->cdf_file_path, "r");  
+    if (!fp) {  
+        fprintf(stderr, "Failed to open CDF file: %s\n", user_param->cdf_file_path);  
+        return -1;  
+    }  
+    
+    while (fgets(line, sizeof(line), fp)) {  
+        if (line[0] != '#' && line[0] != '\n') // 跳过注释和空行  
+            count++;  
+    }  
+    
+    // 分配内存  
+    user_param->cdf_array_size = count;  
+    user_param->cdf_sizes = (uint64_t*)malloc(count * sizeof(uint64_t));  
+    user_param->cdf_probabilities = (double*)malloc(count * sizeof(double));  
+    
+    if (!user_param->cdf_sizes || !user_param->cdf_probabilities) {  
+        fprintf(stderr, "Failed to allocate memory for CDF arrays\n");  
+        fclose(fp);  
+        return -1;  
+    }  
+    
+    // 重新读取文件并填充数组  
+    rewind(fp);  
+    count = 0;  
+    while (fgets(line, sizeof(line), fp)) {  
+        if (line[0] != '#' && line[0] != '\n') {  
+            if (sscanf(line, "%lu %lf", &user_param->cdf_sizes[count],   
+                      &user_param->cdf_probabilities[count]) != 2) {  
+                fprintf(stderr, "Invalid format in CDF file at line %d\n", count + 1);  
+                fclose(fp);  
+                return -1;  
+            }  
+            // 将百分比转换为小数  
+            user_param->cdf_probabilities[count] /= 100.0;  
+            count++;  
+        }  
+    }  
+    
+    fclose(fp);  
+    return 0;  
+}
+
 /******************************************************************************
  *
  ******************************************************************************/
@@ -2305,6 +2355,7 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 	static int run_inf_flag = 0;
 	static int report_fmt_flag = 0;
 	static int use_dscp_flag= 0; 	// use dscp or not
+	static int use_cdf_flag = 0;	// use cdf or not
 	static int srq_flag = 0;
 	static int use_null_mr_flag = 0;
 	static int report_both_flag = 0;
@@ -2474,7 +2525,8 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 			{ .name = "run_infinitely",	.has_arg = 0, .flag = &run_inf_flag, .val = 1 },
 			{ .name = "report_gbits",	.has_arg = 0, .flag = &report_fmt_flag, .val = 1},
 			{ .name = "use-srq",		.has_arg = 0, .flag = &srq_flag, .val = 1},
-			{ .name = "use-dscp",  .has_arg = 0,.flag = &use_dscp_flag,.val = 1 },  
+			{ .name = "use-dscp",  .has_arg = 0,.flag = &use_dscp_flag,.val = 1 },  	// add dscp mode
+			{ .name = "use-cdf",  .has_arg = 1,.flag = &use_cdf_flag,.val = 1 },  	// add cdf mode
 			#ifdef HAVE_TD_API
 			{ .name = "no_lock",		.has_arg = 0, .flag = &no_lock_flag, .val = 1},
 			#endif
@@ -2873,6 +2925,23 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 					user_param->dscp_values[6] = 48;  // CS6  
 					user_param->dscp_values[7] = 56;  // CS7 
 					user_param->use_dscp_array = 1;
+				}
+				if (use_cdf_flag){
+					user_param->use_cdf = 1;
+					user_param->cdf_file_path = strdup(optarg);  // 保存文件路径
+					if (!user_param->cdf_file_path) {  
+						fprintf(stderr, "Failed to allocate memory for CDF file path\n");  
+						return FAILURE;  
+					}  
+                
+					// 加载 CDF 文件  
+					if (load_cdf_file(user_param) != 0) {  
+						if (user_param->cdf_file_path) {  
+							free(user_param->cdf_file_path);  
+							user_param->cdf_file_path = NULL;  
+						}  
+						return FAILURE;  
+					}  
 				}
 				if (pkey_flag) {
 					CHECK_VALUE(user_param->pkey_index,int,"Pkey index",not_int_ptr);

@@ -3136,9 +3136,14 @@ void ctx_set_send_reg_wqes(struct pingpong_context *ctx,
 		}
 
 		for (j = 0; j < user_param->post_list; j++) {
+			// add the size from the cdf if needed
+			uint64_t curr_size = user_param->size;  
+            if (user_param->use_cdf) {  
+                curr_size = get_size_from_cdf(user_param);  
+            }  
 
 			ctx->sge_list[i*user_param->post_list + j].length =
-				(user_param->connection_type == RawEth) ? (user_param->size - HW_CRC_ADDITION) : user_param->size;
+				(user_param->connection_type == RawEth) ? (curr_size - HW_CRC_ADDITION) : curr_size;
 
 			ctx->sge_list[i*user_param->post_list + j].lkey = ctx->mr[i]->lkey;
 			if (user_param->use_null_mr) {

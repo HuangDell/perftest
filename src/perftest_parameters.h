@@ -661,6 +661,12 @@ struct perftest_parameters {
 	int use_dscp_array;
 	uint8_t dscp_values[8];		// for dscp value array
 	struct fct_stats fct_stats;
+
+	int use_cdf; // use cdf for latency test
+	char *cdf_file_path;
+	int cdf_array_size;
+	uint64_t *cdf_sizes;
+	double *cdf_probabilities;
 };
 
 struct report_options {
@@ -883,5 +889,11 @@ int set_eth_mtu(struct perftest_parameters *user_param);
  *
  ******************************************************************************/
 enum ctx_device ib_dev_name(struct ibv_context *context);
+
+
+/**
+ * for load cdf file
+ */
+int load_cdf_file(struct perftest_parameters *user_param);
 
 #endif /* PERFTEST_RESOURCES_H */
