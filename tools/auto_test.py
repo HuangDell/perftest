@@ -50,8 +50,6 @@ open(LOG_FILE, 'a').close()
 print(f"Starting application monitor... Maximum restarts: {MAX_RESTARTS}")
 print(f"Current hostname: {hostname}")
 print(f"Log file: {LOG_FILE}")
-if version in cdf_file_list:
-    cmd += ["--use-cdf", f"./resources/{version}.txt"]
 
 
 while restart_count < MAX_RESTARTS:
@@ -69,7 +67,9 @@ while restart_count < MAX_RESTARTS:
         with open(LOG_FILE, 'a') as log:
             log.write(message + '\n')
         break
-    
+    if version in cdf_file_list:
+        cmd += ["--use-cdf", f"./resources/{version}.txt"]
+        
     # 打开日志文件以追加模式
     with open(LOG_FILE, 'a') as log:
         # 记录当前执行的命令
