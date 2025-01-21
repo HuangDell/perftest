@@ -21,8 +21,9 @@ thre_value = 0  # 可以根据需要修改
 # v7 for qp = 4
 # v8 for qp = 6
 # v9 for qp = 8
+# ali for alistorage
 
-version = "vx"  
+version = "ali"  
 
 
 RESOURCES_DIR = "./out/prototype/" +version 
