@@ -13,7 +13,7 @@ QP_COUNT = 1
 restart_count = 0
 
 # 文件名参数
-ft_value = 0  # 可以根据需要修改
+ft_value = 5000 # 可以根据需要修改
 thre_value = 0  # 可以根据需要修改
 # 可以根据需要修改  v4 for fct test
 # v5 for qp = 2
@@ -23,13 +23,17 @@ thre_value = 0  # 可以根据需要修改
 # v9 for qp = 8
 # ali for alistorage
 
-version = "ali"  
+version = "AliStorage2019"  
+cdf_file_list = ['AliStorage2019','FbHdp2015','GoogleRPC2008','Solar2022']
 
 
 RESOURCES_DIR = "./out/prototype/" +version 
 FILENAME = f"prototype_ft_{ft_value}_thre_{thre_value}_{version}.log"
 LOG_FILE = os.path.join(RESOURCES_DIR, FILENAME)  
 MODE = "./ib_send_bw"
+CDF_FILE = ""
+
+cmd = ["sudo", MODE]
 wait_time = None
 
 # 获取主机名
@@ -46,15 +50,18 @@ open(LOG_FILE, 'a').close()
 print(f"Starting application monitor... Maximum restarts: {MAX_RESTARTS}")
 print(f"Current hostname: {hostname}")
 print(f"Log file: {LOG_FILE}")
+if version in cdf_file_list:
+    cmd += ["--use-cdf", f"./resources/{version}.txt"]
+
 
 while restart_count < MAX_RESTARTS:
     # 根据主机名构建不同的命令
     if hostname == "FNIL-2022DEC-GPU-7":
-        cmd = ["sudo", MODE, "-d", "mlx5_1", "-n", str(REPEAT_COUNT),"-s", str(PACKET_SIZE),"-q",str(QP_COUNT)]
+        cmd += ["-d", "mlx5_1", "-n", str(REPEAT_COUNT),"-s", str(PACKET_SIZE),"-q",str(QP_COUNT)]
         wait_time = 1
 
     elif hostname == "FNIL-2022DEC-GPU-8":
-        cmd = ["sudo", MODE, "10.10.10.4", "-n", str(REPEAT_COUNT),"-s", str(PACKET_SIZE),"-q",str(QP_COUNT)]
+        cmd += ["10.10.10.4", "-n", str(REPEAT_COUNT),"-s", str(PACKET_SIZE),"-q",str(QP_COUNT)]
         wait_time = 3
     else:
         message = f"Unsupported hostname: {hostname}"

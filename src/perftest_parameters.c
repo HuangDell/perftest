@@ -2942,6 +2942,7 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 						}  
 						return FAILURE;  
 					}  
+					printf("CDF file %s loaded successfully\n", user_param->cdf_file_path);
 				}
 				if (pkey_flag) {
 					CHECK_VALUE(user_param->pkey_index,int,"Pkey index",not_int_ptr);
