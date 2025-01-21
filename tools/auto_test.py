@@ -33,7 +33,6 @@ LOG_FILE = os.path.join(RESOURCES_DIR, FILENAME)
 MODE = "./ib_send_bw"
 CDF_FILE = ""
 
-cmd = ["sudo", MODE]
 wait_time = None
 
 # 获取主机名
@@ -53,13 +52,14 @@ print(f"Log file: {LOG_FILE}")
 
 
 while restart_count < MAX_RESTARTS:
+    cmd = ["sudo", MODE]
     # 根据主机名构建不同的命令
     if hostname == "FNIL-2022DEC-GPU-7":
-        cmd += ["-d", "mlx5_1", "-n", str(REPEAT_COUNT),"-s", str(PACKET_SIZE),"-q",str(QP_COUNT)]
+        cmd += ["-d", "mlx5_1", "-n", str(REPEAT_COUNT),"-q",str(QP_COUNT)]
         wait_time = 1
 
     elif hostname == "FNIL-2022DEC-GPU-8":
-        cmd += ["10.10.10.4", "-n", str(REPEAT_COUNT),"-s", str(PACKET_SIZE),"-q",str(QP_COUNT)]
+        cmd += ["10.10.10.4", "-n", str(REPEAT_COUNT),"-q",str(QP_COUNT)]
         wait_time = 3
     else:
         message = f"Unsupported hostname: {hostname}"
@@ -69,7 +69,9 @@ while restart_count < MAX_RESTARTS:
         break
     if version in cdf_file_list:
         cmd += ["--use-cdf", f"./resources/{version}.txt"]
-        
+    else:
+        cmd +=["-s", str(PACKET_SIZE)]
+
     # 打开日志文件以追加模式
     with open(LOG_FILE, 'a') as log:
         # 记录当前执行的命令

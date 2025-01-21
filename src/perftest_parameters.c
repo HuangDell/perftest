@@ -2931,6 +2931,7 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 					user_param->cdf_file_path = strdup(optarg);  // 保存文件路径
 					if (!user_param->cdf_file_path) {  
 						fprintf(stderr, "Failed to allocate memory for CDF file path\n");  
+						free(duplicates_checker);
 						return FAILURE;  
 					}  
                 
@@ -2940,6 +2941,7 @@ int parser(struct perftest_parameters *user_param,char *argv[], int argc)
 							free(user_param->cdf_file_path);  
 							user_param->cdf_file_path = NULL;  
 						}  
+						free(duplicates_checker);
 						return FAILURE;  
 					}  
 					printf("CDF file %s loaded successfully\n", user_param->cdf_file_path);
