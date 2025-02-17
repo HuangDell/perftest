@@ -279,7 +279,7 @@ class PerformanceAnalyzer:
 class GroupedAnalyzer:  
     def __init__(self, base_dir: str = "./out/prototype"):  
         self.base_dir = base_dir  
-        self.log_pattern = re.compile(r"prototype_ft_(\d+)_thre_(\d+)_(v\d+)\.log$")  
+        self.log_pattern = re.compile(r"prototype_ft_(\d+)_thre_(\d+)_(\w+)\.log$")  
     
     def analyze_performance_improvements(self, version_data: Dict):  
         """分析性能改进"""  
