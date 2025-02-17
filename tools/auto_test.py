@@ -13,8 +13,8 @@ QP_COUNT = 1
 restart_count = 0
 
 # 文件名参数
-ft_value = 7500 # 可以根据需要修改
-thre_value = 0  # 可以根据需要修改
+ft_value = 5000 # 可以根据需要修改
+thre_value = 4500  # 可以根据需要修改
 # 可以根据需要修改  v4 for fct test
 # v5 for qp = 2
 # v6 for qp = 3
@@ -23,14 +23,14 @@ thre_value = 0  # 可以根据需要修改
 # v9 for qp = 8
 # ali for alistorage
 
-alg = 'conga'
+alg = 'Conga'
 
-version = "v10" # 可以根据需要修改
-cdf_file_list = ['AliStorage2019','FbHdp2015','GoogleRPC2008','Solar2022']
+version = "AliStorage2019" # 可以根据需要修改
+cdf_file_list = ['AliStorage2019','FbHdp2015','GoogleRPC2008','Solar2022','Fixed']
 
 
-RESOURCES_DIR = "./out/prototype/" +version 
-FILENAME = f"prototype_ft_{ft_value}_thre_{thre_value}_{alg}_{version}.log"
+RESOURCES_DIR = "./out/prototype/" +alg 
+FILENAME = f"prototype_ft_{ft_value}_thre_{thre_value}_{version}.log"
 LOG_FILE = os.path.join(RESOURCES_DIR, FILENAME)  
 MODE = "./ib_send_bw"
 
